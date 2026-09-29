@@ -87,7 +87,7 @@ const okRes = r => r === 'ok' || r === 'created';
 
 // ======================= estado =======================
 let me = store.get('me');                 // { name, pin }
-let people = {}, checks = {}, ctimes = {}, photos = [], reactions = [], bodyPub = [], myBody = [];
+let people = {}, checks = {}, ctimes = {}, photos = [], reactions = [], bodyPub = [], myBody = [], status = {};
 let view = store.get('view') || 'hoy';
 let selDay = today();
 let openRank = null, editingGoals = false, formDirty = false, loaded = false;
@@ -96,13 +96,15 @@ let upload = null;                         // { mode, blob, url }
 let installEvt = null, pushOn = false;
 
 async function load() {
-  const [p, c, ph, re, bo] = await Promise.all([
-    get('wa_people?select=name,goals,race,avatar'),
+  const [p, c, ph, re, bo, st] = await Promise.all([
+    get('wa_people?select=name,goals,race,avatar,app_at'),
     get('wa_checks?select=name,day,habits,updated_at&limit=5000'),
     get('wa_photos?select=*&order=created_at.desc&limit=120'),
     get('wa_reactions?select=*&order=created_at.asc&limit=5000'),
     get('wa_body?select=*&order=day.asc'),
+    rpc('wa_status', {}).catch(() => []),
   ]);
+  status = {}; (st || []).forEach(x => status[x.name] = x);
   const keep = me && pending ? checks[me.name] : null;
   people = {}; p.forEach(x => people[x.name] = x);
   checks = {}; ctimes = {};
@@ -219,6 +221,32 @@ function weekBars(name) {
   return html;
 }
 
+// ---------- ¿quién ya está listo? ----------
+function readyItems(n) {
+  const p = people[n] || {}, st = status[n] || {};
+  return [
+    ['🔑', 'Entró', !!st.pin],
+    ['🎯', 'Metas y hábitos propios', goalsComplete(p.goals)],
+    ['🏁', 'Carrera', !!p.race?.inscrito],
+    ['📷', 'Foto', !!p.avatar],
+    ['📲', 'App', !!p.app_at],
+    ['🔔', 'Aviso', !!st.aviso],
+  ];
+}
+function readyBoard() {
+  const rows = NAMES.map(n => ({ n, it: readyItems(n) }));
+  const listos = rows.filter(r => r.it.every(x => x[2])).length;
+  return `<h2>¿Quién ya está listo? <small>${listos}/${NAMES.length} al 100%</small></h2>
+  <div class="card">${rows.map(({ n, it }) => {
+    const ok = it.filter(x => x[2]).length;
+    return `<div class="row" style="align-items:center;margin:8px 0">${av(n, 34)}
+      <div style="flex:1;min-width:0"><b>${n}</b> <span class="tiny ${ok === it.length ? '' : 'muted'}" style="${ok === it.length ? 'color:var(--ok)' : ''}">${ok === it.length ? '✅ listo' : `${ok}/${it.length}`}</span>
+        <div style="font-size:17px;letter-spacing:2px;margin-top:2px">${it.map(([e, t, v]) => `<span title="${t}: ${v ? 'sí' : 'falta'}" style="${v ? '' : 'filter:grayscale(1);opacity:.25'}">${e}</span>`).join('')}</div></div></div>`;
+  }).join('')}
+  <p class="tiny dim" style="margin:8px 0 0">🔑 entró · 🎯 metas + 2 hábitos propios · 🏁 inscrito a su carrera · 📷 foto de perfil · 📲 app instalada · 🔔 aviso de las 10 pm. Lo apagado es lo que le falta.</p></div>`;
+}
+const someoneMissing = () => NAMES.some(n => readyItems(n).slice(0, 2).some(x => !x[2]));
+
 // ======================= vistas =======================
 function vLogin() {
   const sel = vLogin.sel;
@@ -302,6 +330,7 @@ function preStart() {
   </div>
   <h2>Antes de arrancar</h2>
   <div class="card"><ul class="setup">${items.map(([ok, txt, v]) => `<li>${ok ? '✅' : '⬜'} ${ok ? `<span class="muted">${txt}</span>` : `<button class="linkbtn" data-act="go" data-v="${v}">${txt} →</button>`}</li>`).join('')}</ul></div>
+  ${readyBoard()}
   <h2>Mis metas</h2><div class="card">${goalsView(p.goals)}<button class="btn ghost" style="margin-top:12px" data-act="goals-edit">Cambiar mis metas</button></div>`;
 }
 
@@ -344,7 +373,8 @@ function goalsForm(g0, partial) {
 
 function vTabla() {
   const t = today(), list = ranking();
-  let html = summaryCard();
+  let html = (t < START || someoneMissing()) ? readyBoard() : '';
+  html += summaryCard();
   const top = list.slice(0, 3);
   if (t >= START && top.some(x => x.s.total > 0)) {
     const order = [top[1], top[0], top[2]].filter(Boolean);
@@ -717,6 +747,11 @@ function ejField() {
   setDay(selDay, h);
 }
 
+async function markApp() {
+  if (!me || !isStandalone() || people[me.name]?.app_at || markApp.done) return;
+  markApp.done = true;
+  try { await rpc('wa_mark_app', mine()); } catch {}
+}
 async function doLogin() {
   const pin = ($('pin')?.value || '').trim(), name = vLogin.sel;
   if (!/^\d{4}$/.test(pin)) return toast('El PIN son 4 números');
@@ -725,7 +760,7 @@ async function doLogin() {
     if (!okRes(res)) return toast(ERR[res] || res);
     me = { name, pin }; store.set('me', me); vLogin.sel = null; view = 'hoy';
     toast(res === 'created' ? '¡PIN creado! No lo olvides.' : `¡Qué onda, ${name}!`);
-    await loadMyBody(); await checkPush(); render();
+    await loadMyBody(); await checkPush(); await refresh(true); markApp();
   } catch { toast('Error de conexión'); }
 }
 function logout() { me = null; store.del('me'); editingGoals = false; myBody = []; render(); }
@@ -920,7 +955,7 @@ async function setPush(on) {
       toast('Recordatorio apagado');
     }
   } catch (e) { toast('No se pudo cambiar el aviso'); }
-  await checkPush(); render();
+  await checkPush(); await refresh(true);
 }
 
 // ======================= eventos =======================
@@ -1014,5 +1049,5 @@ function confetti() {
 // ======================= arranque =======================
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 render();
-(async () => { await Promise.all([refresh(true), loadMyBody(), checkPush()]); render(); })();
+(async () => { await Promise.all([refresh(true), loadMyBody(), checkPush()]); render(); markApp(); })();
 })();
