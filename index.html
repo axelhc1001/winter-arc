@@ -117,6 +117,11 @@ nav button.on{color:var(--ice)}
       <h2>Primero, tus metas</h2>
       <p class="small muted">Se pueden cambiar hasta el 1 de octubre. Después quedan fijas.</p>
     </div>
+    <div id="preStart" class="card hide" style="text-align:center">
+      <div class="small muted">ARRANCA EL JUEVES 1 DE OCTUBRE</div>
+      <div class="race"><div class="cd" id="preCd"></div></div>
+      <p class="small muted" style="margin:6px 0 0">Todavía no se marca nada. Por ahora: revisa tus metas (se congelan el 1) e inscríbete a tu carrera en la pestaña 🏁.</p>
+    </div>
     <div id="hoyMain">
       <div class="days" id="dayBtns"></div>
       <div id="habList"></div>
@@ -252,7 +257,7 @@ async function rpc(fn, body) {
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
-const ERR = { bad: 'PIN incorrecto', locked: 'Demasiados intentos. Espera 15 minutos.', fecha: 'Solo puedes editar hoy y los 2 días anteriores.',
+const ERR = { bad: 'PIN incorrecto', locked: 'Demasiados intentos. Espera 15 minutos.', fecha: 'Solo se marca del 1 oct al 23 dic, hoy o hasta 2 días atrás.',
   congeladas: 'Las metas ya quedaron fijas desde el 1 de octubre.', datos: 'Datos inválidos', no_user: 'Nombre no encontrado' };
 
 // ---------- estado ----------
@@ -347,14 +352,17 @@ function renderHoy() {
   const g = people[me.name]?.goals;
   const needGoals = !g;
   $('goalsNeeded').classList.toggle('hide', !needGoals);
-  $('hoyMain').classList.toggle('hide', needGoals);
+  const pre = today() < START;
+  $('hoyMain').classList.toggle('hide', needGoals || pre);
+  $('preStart').classList.toggle('hide', needGoals || !pre);
+  if (pre) { const n = diff(today(), START); $('preCd').textContent = `${n} día${n === 1 ? '' : 's'}`; }
   $('goalsTitle').classList.toggle('hide', needGoals);
   renderGoals(needGoals || editingGoals);
-  if (needGoals) return;
+  if (needGoals || pre) return;
 
   const t = today();
-  const opts = [0, 1, 2].map(i => addDays(t, -i));
-  if (!opts.includes(selDay)) selDay = t;
+  const opts = [0, 1, 2].map(i => addDays(t, -i)).filter(d => d >= START && d <= END);
+  if (!opts.includes(selDay)) selDay = opts[0];
   $('dayBtns').innerHTML = opts.map((d, i) => `<button data-d="${d}" class="${d === selDay ? 'on' : ''}">${['Hoy', 'Ayer', 'Antier'][i]}<br><span class="small muted">${fmt(d)}</span></button>`).join('');
 
   const h = checks[me.name]?.[selDay] || {};
