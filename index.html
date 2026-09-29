@@ -157,19 +157,20 @@ nav button.on{color:var(--ice)}
         <li>🧘 Meditar: mínimo 3 días</li>
         <li>🧊 Reto personal: agua fría o el sustituto que cada quien elija, mínimo 5 días</li>
         <li>🍺 Alcohol: cada quien pone su límite (ej. 1 por semana o 1 cada 15 días)</li>
+        <li>🚫 No chaquetas: cada quien pone su máximo por semana (0 = nada)</li>
         <li>🧠 Aprender algo nuevo: 1 al mes</li>
       </ul>
     </div>
     <div class="card">
       <p><b>Puntos</b></p>
       <ul>
-        <li>+1 por cada hábito en el que llegas a tu meta de la semana (7 posibles)</li>
-        <li>+2 extra por semana perfecta (7 de 7) ⭐</li>
-        <li>🍺 Pasarte de tu límite: pierdes ese punto de la semana</li>
+        <li>+1 por cada hábito en el que llegas a tu meta de la semana (8 posibles)</li>
+        <li>+2 extra por semana perfecta (8 de 8) ⭐</li>
+        <li>🍺🚫 Pasarte de tu límite: pierdes ese punto de la semana</li>
         <li>🧠 +1 por cada mes que cumples tu reto de aprender</li>
         <li>🏁 +5 inscrito antes del 31 oct · −10 si al 30 nov no estás inscrito · +5 por terminarla</li>
       </ul>
-      <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (28–31 dic) son cortas y la meta se ajusta en proporción. El alcohol y la semana perfecta se cuentan cuando termina la semana.</p>
+      <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (28–31 dic) son cortas y la meta se ajusta en proporción. El alcohol, las chaquetas y la semana perfecta se cuentan cuando termina la semana.</p>
     </div>
     <div class="card">
       <p><b>Cómo se llena</b></p>
@@ -211,7 +212,7 @@ const WEEKLY = [
   { k: 'frio',      icon: '🧊', label: 'Reto personal', min: 5, def: 7 },
 ];
 const DEF_GOALS = { ejercicio: 5, dormir: 5, comer: 5, leer: 5, leer_pags: 10, meditar: 3,
-  frio: 7, frio_nombre: 'Baño con agua fría', alcohol_max: 1, alcohol_cada: 7, aprender: '' };
+  frio: 7, frio_nombre: 'Baño con agua fría', alcohol_max: 1, alcohol_cada: 7, chaqueta_max: 0, aprender: '' };
 
 // ---------- utilidades de fecha (todo en hora de CDMX, fechas como 'YYYY-MM-DD') ----------
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -292,8 +293,9 @@ function score(name) {
     let met = 0;
     for (const h of WEEKLY) if (countIn(ch, h.k, w.s, w.e) >= target(g, h.k, w.days)) met++;
     if (closed && alcoholOk(g, ch, w.e)) met++;
+    if (closed && countIn(ch, 'chaqueta', w.s, w.e) <= (+g.chaqueta_max || 0)) met++;
     let pts = met;
-    if (closed && met === 7) { pts += 2; out.perfect++; }
+    if (closed && met === 8) { pts += 2; out.perfect++; }
     out.weeks.push({ pts, met, closed });
     out.total += pts;
     if (w.s <= t && t <= w.e) out.weekMet = met;
@@ -358,6 +360,7 @@ function renderHoy() {
   const rows = WEEKLY.map(x => ({ k: x.k, icon: x.icon,
     label: x.k === 'frio' ? (g.frio_nombre || 'Reto personal') : x.k === 'leer' ? `Leí ${g.leer_pags || 10}+ páginas` : x.label }));
   rows.push({ k: 'aprender', icon: '🧠', label: 'Cumplí mi reto de aprender del mes', sub: g.aprender ? esc(g.aprender) + ' · basta 1 vez al mes' : 'Basta 1 vez al mes' });
+  rows.push({ k: 'chaqueta', icon: '🙈', label: 'Chaqueta', sub: `Tu límite: ${+g.chaqueta_max || 0} por semana`, bad: true });
   rows.push({ k: 'alcohol', icon: '🍺', label: 'Tomé alcohol', sub: `Tu límite: ${g.alcohol_max} ${g.alcohol_cada == 14 ? 'cada 15 días' : 'por semana'}`, bad: true });
   $('habList').innerHTML = rows.map(r => `<button class="hab ${r.bad ? 'bad' : ''} ${h[r.k] ? 'on' : ''}" data-k="${r.k}">
     <span class="ic">${r.icon}</span><span class="tx">${esc(r.label)}${r.sub ? `<small>${r.sub}</small>` : ''}</span><span class="ck">${h[r.k] ? (r.bad ? '!' : '✓') : ''}</span></button>`).join('');
@@ -379,6 +382,9 @@ function weekBars(name) {
   const [a, b] = alcoholWindow(g, w.e), na = countIn(ch, 'alcohol', a, b), mx = +g.alcohol_max || 0;
   html += `<div class="b"><div class="t"><span>🍺 Alcohol ${g.alcohol_cada == 14 ? '(últimos 15 días)' : '(esta semana)'}</span><span>${na}/${mx} máx${na > mx ? ' ✗' : ''}</span></div>
     <div class="bar ${na > mx ? 'over' : ''}"><i style="width:${Math.min(100, mx ? na / mx * 100 : (na ? 100 : 0))}%"></i></div></div>`;
+  const nc = countIn(ch, 'chaqueta', w.s, w.e), mc = +g.chaqueta_max || 0;
+  html += `<div class="b"><div class="t"><span>🚫 No chaquetas (esta semana)</span><span>${nc}/${mc} máx${nc > mc ? ' ✗' : ''}</span></div>
+    <div class="bar ${nc > mc ? 'over' : ''}"><i style="width:${Math.min(100, mc ? nc / mc * 100 : (nc ? 100 : 0))}%"></i></div></div>`;
   return html;
 }
 
@@ -390,6 +396,7 @@ function renderGoals(edit) {
       ${WEEKLY.map(x => `<span class="chip">${x.icon} ${esc(x.k === 'frio' ? g.frio_nombre : x.label)}: ${g[x.k]}/sem</span>`).join('')}
       <span class="chip">📖 ${g.leer_pags}+ págs</span>
       <span class="chip">🍺 máx ${g.alcohol_max} ${g.alcohol_cada == 14 ? 'cada 15 días' : 'por semana'}</span>
+      <span class="chip">🚫 chaquetas máx ${+g.chaqueta_max || 0}/sem</span>
       <span class="chip">🧠 ${esc(g.aprender || '—')}</span></div>
       ${locked ? '<p class="small muted">🔒 Fijas desde el 1 de octubre.</p>' : '<button class="btn ghost" id="editGoals" style="margin-top:12px">Cambiar mis metas</button>'}`;
     return;
@@ -405,6 +412,7 @@ function renderGoals(edit) {
     <label class="f">🍺 Alcohol: máximo de veces</label>
     <div class="row">${sel('alcohol_max', 0, 3, g.alcohol_max)}
       <select id="g_alcohol_cada"><option value="7" ${g.alcohol_cada != 14 ? 'selected' : ''}>por semana</option><option value="14" ${g.alcohol_cada == 14 ? 'selected' : ''}>cada 15 días</option></select></div>
+    <label class="f">🚫 No chaquetas: máximo por semana (0 = nada)</label>${sel('chaqueta_max', 0, 2, +g.chaqueta_max || 0)}
     <label class="f">🧠 ¿Qué vas a aprender? (1 cosa al mes)</label>
     <input id="g_aprender" maxlength="80" value="${esc(g.aprender)}" placeholder="Ej. un curso, una receta, un idioma…">
     <button class="btn" id="saveGoals" style="margin-top:14px">Guardar metas</button>
@@ -435,7 +443,7 @@ function renderRank() {
       <div class="bars" style="margin-top:6px">${weekBars(n)}</div></div>` : '';
     return `<div class="card"><div class="rk" data-n="${n}">
       <div class="pos">${pos < 3 && s.total > 0 ? medal[pos] : pos + 1}</div>
-      <div class="nm">${n}<small>esta semana: ${s.weekMet}/7 hábitos</small></div>
+      <div class="nm">${n}<small>esta semana: ${s.weekMet}/8 hábitos</small></div>
       <div class="pts">${s.total}<small>pts</small></div></div>
       <div class="chips">${chips}</div>${det}</div>`;
   }).join('');
@@ -508,7 +516,7 @@ async function saveGoals() {
   const goals = {};
   for (const x of WEEKLY) goals[x.k] = +v(x.k);
   Object.assign(goals, { leer_pags: +v('leer_pags'), frio_nombre: v('frio_nombre').trim() || 'Baño con agua fría',
-    alcohol_max: +v('alcohol_max'), alcohol_cada: +v('alcohol_cada'), aprender: v('aprender').trim() });
+    alcohol_max: +v('alcohol_max'), alcohol_cada: +v('alcohol_cada'), chaqueta_max: +v('chaqueta_max'), aprender: v('aprender').trim() });
   try {
     const res = await rpc('wa_save_goals', { p_name: me.name, p_pin: me.pin, p_goals: goals });
     if (res === 'ok') { toast('Metas guardadas ✓'); editingGoals = false; formDirty = false; await refresh(); }
