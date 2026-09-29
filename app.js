@@ -459,12 +459,13 @@ function vMuro() {
   let html = `<button class="btn" data-act="photo-new">📸 Subir foto</button>
     <p class="tiny dim center" style="margin:6px 0 14px">Evidencia del gym, la comida, la carrera… Se ve aquí y todos pueden reaccionar.</p>`;
   if (!items.length) html += `<div class="card center muted">Nadie ha subido nada todavía. Estrena el muro 📸</div>`;
+  let nImg = 0;
   html += items.slice(0, 50).map(it => {
     if (it.type === 'photo') {
       const p = it.p, target = 'photo:' + p.id;
       return `<div class="card post"><div class="hd">${av(p.name, 36)}<div class="nm">${esc(p.name)}<small>${ago(p.created_at)} · ${fmt(p.day)}</small></div>
         ${p.name === me.name ? `<button class="linkbtn" data-act="photo-del" data-id="${p.id}" style="color:var(--dim)">borrar</button>` : ''}</div>
-        <img class="ph" src="${esc(imgUrl(p.path))}" loading="lazy" alt="" onerror="this.style.display='none'">
+        <img class="ph" src="${esc(imgUrl(p.path))}" loading="${nImg++ < 8 ? 'eager' : 'lazy'}" decoding="async" alt="" onerror="this.style.display='none'">
         <div class="bd">${p.caption ? `<div>${esc(p.caption)}</div>` : ''}${reactBar(target, idx)}</div></div>`;
     }
     const g = people[it.n]?.goals, target = `day:${it.n}:${it.d}`;
