@@ -1,6 +1,6 @@
 # Winter Arc ❄️
 
-Registro diario y tabla de posiciones del Winter Arc (1 oct – 31 dic 2026).
+Registro diario y tabla de posiciones del Winter Arc (1 oct – 23 dic 2026).
 
 - `index.html`: la página completa.
 - `config.js`: URL y llave pública de Supabase.

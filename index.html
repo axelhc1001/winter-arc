@@ -92,7 +92,7 @@ nav button.on{color:var(--ice)}
 <div class="wrap">
   <header>
     <h1>WINTER <span>ARC</span> ❄️</h1>
-    <div class="sub" id="sub">1 oct – 31 dic 2026</div>
+    <div class="sub" id="sub">1 oct – 23 dic 2026</div>
     <div class="prog"><i id="progbar" style="width:0"></i></div>
     <div class="who hide" id="who"><span id="whoName"></span><button id="logout">Cambiar de persona</button></div>
   </header>
@@ -170,7 +170,7 @@ nav button.on{color:var(--ice)}
         <li>🧠 +1 por cada mes que cumples tu reto de aprender</li>
         <li>🏁 +5 inscrito antes del 31 oct · −10 si al 30 nov no estás inscrito · +5 por terminarla</li>
       </ul>
-      <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (28–31 dic) son cortas y la meta se ajusta en proporción. El alcohol, las chaquetas y la semana perfecta se cuentan cuando termina la semana.</p>
+      <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (21–23 dic) son cortas y la meta se ajusta en proporción. El alcohol, las chaquetas y la semana perfecta se cuentan cuando termina la semana.</p>
     </div>
     <div class="card">
       <p><b>Cómo se llena</b></p>
@@ -196,7 +196,7 @@ nav button.on{color:var(--ice)}
 (() => {
 const CFG = window.WA_CONFIG || {};
 const NAMES = ['Axel', 'Emilio', 'Santiago', 'Diego', 'Lorenzo'];
-const START = '2026-10-01', END = '2026-12-31', GOALS_LOCK = '2026-10-01';
+const START = '2026-10-01', END = '2026-12-23', GOALS_LOCK = '2026-10-01';
 const RACE_BONUS = '2026-10-31', RACE_PENALTY = '2026-11-30';
 const TZ = 'America/Mexico_City';
 const MONTHS = ['2026-10', '2026-11', '2026-12'];
@@ -316,10 +316,11 @@ const curWeek = () => { const t = today(); return WEEKS.find(w => w.s <= t && t 
 // ---------- render ----------
 function render() {
   const t = today();
-  const day = Math.min(Math.max(diff(START, t) + 1, 0), 92);
-  $('sub').textContent = t < START ? `Empieza en ${diff(t, START)} día${diff(t, START) === 1 ? '' : 's'} · 1 oct – 31 dic`
-    : t > END ? 'Terminó 🎉' : `Día ${day} de 92 · faltan ${diff(t, END)} días`;
-  $('progbar').style.width = (day / 92 * 100) + '%';
+  const TOTAL = diff(START, END) + 1;
+  const day = Math.min(Math.max(diff(START, t) + 1, 0), TOTAL);
+  $('sub').textContent = t < START ? `Empieza en ${diff(t, START)} día${diff(t, START) === 1 ? '' : 's'} · 1 oct – 23 dic`
+    : t > END ? 'Terminó 🎉' : `Día ${day} de ${TOTAL} · faltan ${diff(t, END)} días`;
+  $('progbar').style.width = (day / TOTAL * 100) + '%';
 
   if (!CFG.url || !CFG.key) { $('setup').classList.remove('hide'); return; }
   const logged = !!me;
