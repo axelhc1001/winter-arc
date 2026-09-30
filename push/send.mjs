@@ -2,7 +2,7 @@
 // Lo corre GitHub Actions (.github/workflows/recordatorio.yml).
 import webpush from 'web-push';
 
-const { SUPABASE_URL, SUPABASE_KEY, PUSH_SECRET, VAPID_PUBLIC, VAPID_PRIVATE, TODOS } = process.env;
+const { SUPABASE_URL, SUPABASE_KEY, PUSH_SECRET, VAPID_PUBLIC, VAPID_PRIVATE, TODOS, SOLO } = process.env;
 const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
 const todos = TODOS === 'true';
 
@@ -45,6 +45,7 @@ if (!todos && !(await rpc('wa_push_claim', { p_secret: PUSH_SECRET }))) {
 const targets = await rpc('wa_push_targets', { p_secret: PUSH_SECRET });
 let enviados = 0;
 for (const t of targets) {
+  if (SOLO && t.name !== SOLO) continue;          // prueba dirigida a una sola persona
   if (!todos && !t.falta) continue;
   const frase = todos ? 'prueba de recordatorio ✅' : FRASES[Math.floor(Math.random() * FRASES.length)];
   try {

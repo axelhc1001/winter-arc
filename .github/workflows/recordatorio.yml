@@ -13,6 +13,10 @@ on:
         description: 'Mandar a todos los suscritos (prueba)'
         type: boolean
         default: false
+      solo:
+        description: 'Solo a esta persona (ej. Axel); vacío = todos'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -38,6 +42,7 @@ jobs:
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           TODOS: ${{ inputs.todos }}
+          SOLO: ${{ inputs.solo }}
       # GitHub apaga los cron de repos sin actividad en 60 días: un commit cada lunes lo mantiene vivo.
       - name: Latido semanal
         if: github.event_name == 'schedule'
