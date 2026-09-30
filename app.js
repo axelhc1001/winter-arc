@@ -42,6 +42,7 @@ const minS = (a, b) => a < b ? a : b;
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = id => document.getElementById(id);
 const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+const yList = xs => xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem('wa_' + k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem('wa_' + k, JSON.stringify(v)); } catch {} },
@@ -204,7 +205,7 @@ const curWeek = () => { const t = today(); return WEEKS.find(w => w.s <= t && t 
 function av(name, size = 36) {
   const p = people[name] || {};
   const st = `width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px;background:${COLORS[name] || '#7dd3fc'}`;
-  return p.avatar ? `<span class="av" style="${st}"><img src="${esc(imgUrl(p.avatar))}" alt="" loading="lazy"></span>`
+  return p.avatar ? `<span class="av" style="${st}"><img src="${esc(imgUrl(p.avatar))}" alt=""></span>`
     : `<span class="av" style="${st}">${esc((name || '?')[0])}</span>`;
 }
 function bar(n, tg, over) {
@@ -373,7 +374,7 @@ function goalsForm(g0, partial) {
 
 function vTabla() {
   const t = today(), list = ranking();
-  let html = (t < START || someoneMissing()) ? readyBoard() : '';
+  let html = (t < START || (t <= END && someoneMissing())) ? readyBoard() : '';
   html += summaryCard();
   const top = list.slice(0, 3);
   if (t >= START && top.some(x => x.s.total > 0)) {
@@ -396,7 +397,7 @@ function vTabla() {
     const open = openRank === n;
     return `<div class="card ${pos === 0 && s.total > 0 ? 'glow' : ''}"><div class="rk" data-act="rank" data-n="${n}">
       <div class="pos">${pos + 1}</div>${av(n, 40)}
-      <div class="nm">${n}<small>${s.week ? `esta semana ${s.week.met}/${s.week.total} hábitos` : 'aún no arranca'}</small></div>
+      <div class="nm">${n}<small>${t > END ? `${s.perfect} ${s.perfect === 1 ? 'semana perfecta' : 'semanas perfectas'} · mejor racha ${s.best}` : s.week ? `esta semana ${s.week.met}/${s.week.total} hábitos` : t < START ? 'aún no arranca' : 'sin metas completas'}</small></div>
       <div class="pts">${s.total}<small>pts</small></div></div>
       <div class="chips" style="margin-top:10px">${chips}</div>${open ? rankDetail(n, s) : ''}</div>`;
   }).join('');
@@ -444,9 +445,9 @@ function summaryCard() {
   const line = (e, txt) => `<div class="line"><span class="e">${e}</span><span>${txt}</span></div>`;
   return `<div class="card summary fadein">
     <h2 style="margin:0 0 6px">Resumen semana ${s.i + 1} <small>${fmtS(w.s)} – ${fmtS(w.e)}</small></h2>
-    ${line('🏆', `<b>${s.top.join(' y ')}</b> ganó la semana con ${s.rows[0].pts} pts`)}
-    ${s.bottom.length ? line('💀', `<b>${s.bottom.join(' y ')}</b> la cagó: ${s.rows[s.rows.length - 1].pts} pts`) : ''}
-    ${s.perf.length ? line('⭐', `Semana perfecta: <b>${s.perf.join(', ')}</b>`) : ''}
+    ${line('🏆', `<b>${yList(s.top)}</b> ${s.top.length > 1 ? 'ganaron' : 'ganó'} la semana con ${s.rows[0].pts} pts`)}
+    ${s.bottom.length ? line('💀', `<b>${yList(s.bottom)}</b> la ${s.bottom.length > 1 ? 'cagaron' : 'cagó'}: ${s.rows[s.rows.length - 1].pts} pts`) : ''}
+    ${s.perf.length ? line('⭐', `Semana perfecta: <b>${yList(s.perf)}</b>`) : ''}
     ${line('🏋️', `El grupo fue ${plural(s.gym, 'vez', 'veces')} al gym${s.km ? ` · ${s.km.toFixed(1)} km` : ''}${s.min ? ` · ${Math.round(s.min / 60)} h` : ''}`)}
     ${s.fotero && s.fotero.fotos ? line('📸', `Más fotos: <b>${s.fotero.n}</b> (${s.fotero.fotos})`) : ''}
     <div class="chips" style="margin:10px 0">${s.rows.map(r => `<span class="chip">${r.n} ${r.pts}</span>`).join('')}</div>
@@ -692,7 +693,7 @@ function header() {
   const t = today();
   const day = Math.min(Math.max(diff(START, t) + 1, 0), TOTAL_DAYS);
   $('sub').textContent = t < START ? `Arranca en ${plural(diff(t, START), 'día', 'días')} · 1 oct – 9 dic`
-    : t > END ? 'Terminó 🎉' : `Día ${day} de ${TOTAL_DAYS} · faltan ${plural(diff(t, END), 'día', 'días')}`;
+    : t > END ? 'Terminó 🎉' : t === END ? `Día ${day} de ${TOTAL_DAYS} · ¡último día! 🔥` : `Día ${day} de ${TOTAL_DAYS} · faltan ${plural(diff(t, END), 'día', 'días')}`;
   $('progbar').style.width = (day / TOTAL_DAYS * 100) + '%';
 }
 function render() {
