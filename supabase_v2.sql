@@ -65,7 +65,7 @@ declare s text;
 begin
   s := wa_check_pin(p_name, p_pin);
   if s not in ('ok', 'created') then return s; end if;
-  if p_day > wa_today() or p_day < wa_today() - 2 or p_day > date '2026-12-23' or p_day < date '2026-10-01' then return 'fecha'; end if;
+  if p_day > wa_today() or p_day < wa_today() - 2 or p_day > date '2026-12-09' or p_day < date '2026-10-01' then return 'fecha'; end if;
   if jsonb_typeof(p_habits) <> 'object' or length(p_habits::text) > 2000 then return 'datos'; end if;
   if coalesce((p_habits->>'comodin')::boolean, false)
      and (select count(*) from wa_checks where name = p_name and day <> p_day and coalesce((habits->>'comodin')::boolean, false)) >= 2

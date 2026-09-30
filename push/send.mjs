@@ -6,8 +6,15 @@ const { SUPABASE_URL, SUPABASE_KEY, PUSH_SECRET, VAPID_PUBLIC, VAPID_PRIVATE, TO
 const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
 const todos = TODOS === 'true';
 
-if (!todos && (hoy < '2026-10-01' || hoy > '2026-12-23')) {
+const hora = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/Mexico_City', hour: 'numeric', hourCycle: 'h23' }).format(new Date());
+
+if (!todos && (hoy < '2026-10-01' || hoy > '2026-12-09')) {
   console.log(`Fuera del reto (${hoy}), no se manda nada.`);
+  process.exit(0);
+}
+// GitHub a veces atrasa los cron: solo se manda entre 10 pm y 11:59 pm de CDMX, nunca de madrugada.
+if (!todos && (hora < 22 || hora > 23)) {
+  console.log(`Son las ${hora} h en CDMX, fuera de la ventana de 10 pm. No se manda.`);
   process.exit(0);
 }
 
@@ -29,6 +36,11 @@ const FRASES = [
   'tu racha 🔥 está en peligro. Marca tu día.',
   'los demás ya marcaron. ¿Y tú? 👀',
 ];
+
+if (!todos && !(await rpc('wa_push_claim', { p_secret: PUSH_SECRET }))) {
+  console.log(`El recordatorio de ${hoy} ya salió en un intento anterior.`);
+  process.exit(0);
+}
 
 const targets = await rpc('wa_push_targets', { p_secret: PUSH_SECRET });
 let enviados = 0;

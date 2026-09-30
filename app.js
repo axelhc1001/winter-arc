@@ -6,7 +6,7 @@ const CFG = window.WA_CONFIG || {};
 const VAPID = 'BBJ6ZnOMhHb-tLS1lltwXsBPqPFRVtvqCk5PUxe5O37LmuO97JCAKQKXJYUNKbkONJdByrsAUQT73Htm8UyQW-o';
 const NAMES = ['Axel', 'Emilio', 'Santiago', 'Diego', 'Lorenzo'];
 const COLORS = { Axel: '#7dd3fc', Emilio: '#a78bfa', Santiago: '#34d399', Diego: '#fbbf24', Lorenzo: '#f472b6' };
-const START = '2026-10-01', END = '2026-12-23', GOALS_LOCK = '2026-10-01';
+const START = '2026-10-01', END = '2026-12-09', GOALS_LOCK = '2026-10-01';
 const RACE_BONUS = '2026-10-31', RACE_PENALTY = '2026-11-30';
 const TZ = 'America/Mexico_City';
 const MONTHS = [['2026-10', 'octubre'], ['2026-11', 'noviembre'], ['2026-12', 'diciembre']];
@@ -81,7 +81,7 @@ async function rpc(fn, body) {
 const mine = extra => ({ p_name: me.name, p_pin: me.pin, ...extra });
 const imgUrl = path => `${CFG.url}/storage/v1/object/public/fotos/${path}`;
 const ERR = { bad: 'PIN incorrecto', locked: 'Demasiados intentos. Espera 15 minutos.',
-  fecha: 'Solo se marca del 1 oct al 23 dic, hoy o hasta 2 días atrás.', congeladas: 'Tus metas ya quedaron fijas desde el 1 de octubre.',
+  fecha: 'Solo se marca del 1 oct al 9 dic, hoy o hasta 2 días atrás.', congeladas: 'Tus metas ya quedaron fijas desde el 1 de octubre.',
   datos: 'Datos inválidos', no_user: 'Nombre no encontrado', comodines: `Ya usaste tus ${MAX_COMODINES} comodines`, calma: 'Más despacio 😅' };
 const okRes = r => r === 'ok' || r === 'created';
 
@@ -672,7 +672,7 @@ function vReglas() {
       <li>🧠 +1 por cada mes que cumples tu reto de aprender</li>
       <li>🏁 +5 inscrito antes del 31 oct · −10 si al 30 nov no estás inscrito · +5 por terminarla</li>
     </ul>
-    <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (21–23 dic) son cortas y la meta se ajusta en proporción. El alcohol, las chaquetas y la semana perfecta se cuentan cuando termina la semana.</p></div>
+    <p class="small muted">Las semanas van de lunes a domingo. La primera (1–4 oct) y la última (7–9 dic) son cortas y la meta se ajusta en proporción. El alcohol, las chaquetas y la semana perfecta se cuentan cuando termina la semana.</p></div>
   <div class="card rules"><p><b>🛟 Comodines</b></p>
     <p>Cada quien tiene ${MAX_COMODINES} en todo el reto, para un día de enfermedad o viaje. Ese día no cuenta para tus metas de la semana y tu racha sigue. Todos ven cuántos usaste.</p></div>
   <div class="card rules"><p><b>Cómo se llena</b></p>
@@ -691,7 +691,7 @@ const VIEWS = { hoy: vHoy, tabla: vTabla, muro: vMuro, carrera: vCarrera, yo: vY
 function header() {
   const t = today();
   const day = Math.min(Math.max(diff(START, t) + 1, 0), TOTAL_DAYS);
-  $('sub').textContent = t < START ? `Arranca en ${plural(diff(t, START), 'día', 'días')} · 1 oct – 23 dic`
+  $('sub').textContent = t < START ? `Arranca en ${plural(diff(t, START), 'día', 'días')} · 1 oct – 9 dic`
     : t > END ? 'Terminó 🎉' : `Día ${day} de ${TOTAL_DAYS} · faltan ${plural(diff(t, END), 'día', 'días')}`;
   $('progbar').style.width = (day / TOTAL_DAYS * 100) + '%';
 }
